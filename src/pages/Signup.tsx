@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
+  const { user, loading: authLoading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,21 +18,32 @@ const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  if (authLoading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (user) return <Navigate to="/create-school" replace />;
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/create-school`,
       },
     });
 
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // If session exists (auto-confirm or instant sign in), redirect
+    if (data.session) {
+      toast({ title: "Account created!", description: "Let's set up your school." });
+      navigate("/create-school");
     } else {
       toast({ title: "Check your email", description: "We sent you a confirmation link. Please verify your email to continue." });
     }
