@@ -18,20 +18,26 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          level: string | null
           name: string
           school_id: string
+          trade_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          level?: string | null
           name: string
           school_id: string
+          trade_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          level?: string | null
           name?: string
           school_id?: string
+          trade_id?: string | null
         }
         Relationships: [
           {
@@ -39,6 +45,13 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
             referencedColumns: ["id"]
           },
         ]
@@ -253,18 +266,21 @@ export type Database = {
       }
       trades: {
         Row: {
+          abbreviation: string | null
           created_at: string
           id: string
           name: string
           school_id: string
         }
         Insert: {
+          abbreviation?: string | null
           created_at?: string
           id?: string
           name: string
           school_id: string
         }
         Update: {
+          abbreviation?: string | null
           created_at?: string
           id?: string
           name?: string

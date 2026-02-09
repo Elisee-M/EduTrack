@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const categories = ["Late Coming", "Absenteeism", "Indiscipline", "Uniform Violation", "Property Damage", "Fighting", "Other"];
@@ -19,6 +20,7 @@ const Discipline = () => {
   const { school, userRole } = useSchool();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [records, setRecords] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -66,7 +68,12 @@ const Discipline = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Discipline Records</h1>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Discipline Records</h1>
+        </div>
         {canEdit && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

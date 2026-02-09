@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const SearchStudents = () => {
   const { school } = useSchool();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [tradeFilter, setTradeFilter] = useState("all");
@@ -46,7 +48,12 @@ const SearchStudents = () => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Search Students</h1>
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">Search Students</h1>
+      </div>
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-1 gap-2">
           <Input placeholder="Search by name or registration number..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="min-w-[200px]" />
