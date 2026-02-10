@@ -115,7 +115,7 @@ const RegisterStudent = () => {
               </div>
               <div className="space-y-2">
                 <Label>Date of Birth</Label>
-                <Input type="date" value={form.date_of_birth} onChange={(e) => handleChange("date_of_birth", e.target.value)} />
+                <Input type="date" value={form.date_of_birth} onChange={(e) => handleChange("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
               </div>
               <div className="space-y-2">
                 <Label>Gender</Label>

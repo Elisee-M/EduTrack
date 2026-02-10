@@ -14,6 +14,7 @@ import Students from "./pages/Students";
 import RegisterStudent from "./pages/RegisterStudent";
 import StudentProfile from "./pages/StudentProfile";
 import ClassesAndTrades from "./pages/ClassesAndTrades";
+import ClassStudents from "./pages/ClassStudents";
 import Discipline from "./pages/Discipline";
 import SearchStudents from "./pages/SearchStudents";
 import DashboardLayout from "./components/DashboardLayout";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/dashboard/students/register" element={<ProtectedRoute><SchoolRoute><RegisterStudent /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/students/:id" element={<ProtectedRoute><SchoolRoute><StudentProfile /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/classes" element={<ProtectedRoute><SchoolRoute><ClassesAndTrades /></SchoolRoute></ProtectedRoute>} />
+              <Route path="/dashboard/classes/:classId" element={<ProtectedRoute><SchoolRoute><ClassStudents /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/discipline" element={<ProtectedRoute><SchoolRoute><Discipline /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/search" element={<ProtectedRoute><SchoolRoute><SearchStudents /></SchoolRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

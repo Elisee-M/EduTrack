@@ -80,6 +80,9 @@ const Dashboard = () => {
           <Link to="/dashboard/students/register"><UserPlus className="mr-2 h-4 w-4" />Register Student</Link>
         </Button>
         <Button variant="outline" asChild>
+          <Link to="/dashboard/students"><Users className="mr-2 h-4 w-4" />View All Students</Link>
+        </Button>
+        <Button variant="outline" asChild>
           <Link to="/dashboard/search"><Search className="mr-2 h-4 w-4" />Search Student</Link>
         </Button>
         <Button variant="outline" asChild>
