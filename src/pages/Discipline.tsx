@@ -7,14 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, ArrowLeft, Search } from "lucide-react";
+import { Plus, ArrowLeft, Search, Pencil, Award, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-const categories = ["Late Coming", "Absenteeism", "Indiscipline", "Uniform Violation", "Property Damage", "Fighting", "Other"];
+const negativeCategories = ["Late Coming", "Absenteeism", "Indiscipline", "Uniform Violation", "Property Damage", "Fighting", "Other"];
+const positiveCategories = ["Academic Award", "Sports Award", "Best Discipline", "Leadership Award", "Community Service", "Innovation Award", "Other Award"];
 
 const Discipline = () => {
   const { school, userRole } = useSchool();
@@ -23,8 +25,8 @@ const Discipline = () => {
   const navigate = useNavigate();
   const [records, setRecords] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
 
-  // Hierarchical selection state
   const [trades, setTrades] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
@@ -34,7 +36,10 @@ const Discipline = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  const [form, setForm] = useState({ student_id: "", category: "", description: "", action_taken: "", mistake_date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({
+    student_id: "", category: "", description: "", action_taken: "",
+    mistake_date: new Date().toISOString().slice(0, 10), record_type: "negative" as string,
+  });
   const canEdit = userRole?.role !== "viewer";
 
   const fetchRecords = async () => {
@@ -53,7 +58,6 @@ const Discipline = () => {
     supabase.from("trades").select("id, name, abbreviation").eq("school_id", school.id).then(({ data }) => setTrades(data ?? []));
   }, [school]);
 
-  // When trade changes, fetch classes for that trade
   useEffect(() => {
     if (!selectedTrade || !school) { setClasses([]); setSelectedClass(""); setStudents([]); return; }
     supabase.from("classes").select("id, name, level").eq("school_id", school.id).eq("trade_id", selectedTrade)
@@ -63,7 +67,6 @@ const Discipline = () => {
     setForm(p => ({ ...p, student_id: "" }));
   }, [selectedTrade]);
 
-  // When class changes, fetch students for that class
   useEffect(() => {
     if (!selectedClass || !school) { setStudents([]); return; }
     supabase.from("students").select("id, full_name").eq("school_id", school.id).eq("class_id", selectedClass).eq("is_deleted", false)
@@ -71,7 +74,6 @@ const Discipline = () => {
     setForm(p => ({ ...p, student_id: "" }));
   }, [selectedClass]);
 
-  // Manual search
   useEffect(() => {
     if (!searchQuery.trim() || !school) { setSearchResults([]); return; }
     const timer = setTimeout(() => {
@@ -83,32 +85,67 @@ const Discipline = () => {
   }, [searchQuery, school]);
 
   const resetForm = () => {
-    setForm({ student_id: "", category: "", description: "", action_taken: "", mistake_date: new Date().toISOString().slice(0, 10) });
+    setForm({ student_id: "", category: "", description: "", action_taken: "", mistake_date: new Date().toISOString().slice(0, 10), record_type: "negative" });
     setSelectedTrade("");
     setSelectedClass("");
     setSearchMode(false);
     setSearchQuery("");
+    setEditingRecord(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!school || !user || !form.student_id) return;
-    const { error } = await supabase.from("discipline_records").insert({
-      school_id: school.id,
-      student_id: form.student_id,
-      category: form.category,
-      description: form.description || null,
-      action_taken: form.action_taken || null,
-      mistake_date: form.mistake_date,
-      recorded_by: user.id,
-    });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else {
-      setOpen(false);
-      resetForm();
-      fetchRecords();
+
+    if (editingRecord) {
+      const { error } = await supabase.from("discipline_records").update({
+        category: form.category,
+        description: form.description || null,
+        action_taken: form.action_taken || null,
+        mistake_date: form.mistake_date,
+        record_type: form.record_type,
+      }).eq("id", editingRecord.id);
+      if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+      else {
+        setOpen(false);
+        resetForm();
+        fetchRecords();
+        toast({ title: "Record updated" });
+      }
+    } else {
+      const { error } = await supabase.from("discipline_records").insert({
+        school_id: school.id,
+        student_id: form.student_id,
+        category: form.category,
+        description: form.description || null,
+        action_taken: form.action_taken || null,
+        mistake_date: form.mistake_date,
+        recorded_by: user.id,
+        record_type: form.record_type,
+      });
+      if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+      else {
+        setOpen(false);
+        resetForm();
+        fetchRecords();
+      }
     }
   };
+
+  const openEdit = (record: any) => {
+    setEditingRecord(record);
+    setForm({
+      student_id: record.student_id,
+      category: record.category,
+      description: record.description || "",
+      action_taken: record.action_taken || "",
+      mistake_date: record.mistake_date,
+      record_type: record.record_type || "negative",
+    });
+    setOpen(true);
+  };
+
+  const categories = form.record_type === "positive" ? positiveCategories : negativeCategories;
 
   if (!school) return null;
 
@@ -119,7 +156,7 @@ const Discipline = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Discipline Records</h1>
+          <h1 className="text-2xl font-bold">Discipline & Awards</h1>
         </div>
         {canEdit && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
@@ -127,74 +164,84 @@ const Discipline = () => {
               <Button><Plus className="mr-2 h-4 w-4" />Add Record</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Add Discipline Record</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingRecord ? "Edit Record" : "Add Record"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Toggle between hierarchy and search */}
+                {/* Record Type */}
                 <div className="flex gap-2">
-                  <Button type="button" variant={!searchMode ? "default" : "outline"} size="sm" onClick={() => { setSearchMode(false); setForm(p => ({ ...p, student_id: "" })); }}>
-                    Browse by Trade
+                  <Button type="button" variant={form.record_type === "negative" ? "destructive" : "outline"} size="sm"
+                    onClick={() => setForm(p => ({ ...p, record_type: "negative", category: "" }))}>
+                    <AlertTriangle className="mr-1 h-3 w-3" />Discipline Issue
                   </Button>
-                  <Button type="button" variant={searchMode ? "default" : "outline"} size="sm" onClick={() => { setSearchMode(true); setForm(p => ({ ...p, student_id: "" })); }}>
-                    <Search className="mr-1 h-3 w-3" />Search
+                  <Button type="button" variant={form.record_type === "positive" ? "default" : "outline"} size="sm"
+                    onClick={() => setForm(p => ({ ...p, record_type: "positive", category: "" }))}>
+                    <Award className="mr-1 h-3 w-3" />Award / Positive
                   </Button>
                 </div>
 
-                {!searchMode ? (
+                {/* Student Selection - only for new records */}
+                {!editingRecord && (
                   <>
-                    {/* Trade */}
-                    <div className="space-y-2">
-                      <Label>Trade *</Label>
-                      <Select value={selectedTrade} onValueChange={setSelectedTrade}>
-                        <SelectTrigger><SelectValue placeholder="Select trade" /></SelectTrigger>
-                        <SelectContent>
-                          {trades.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} ({t.abbreviation})</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                    <div className="flex gap-2">
+                      <Button type="button" variant={!searchMode ? "default" : "outline"} size="sm" onClick={() => { setSearchMode(false); setForm(p => ({ ...p, student_id: "" })); }}>
+                        Browse by Trade
+                      </Button>
+                      <Button type="button" variant={searchMode ? "default" : "outline"} size="sm" onClick={() => { setSearchMode(true); setForm(p => ({ ...p, student_id: "" })); }}>
+                        <Search className="mr-1 h-3 w-3" />Search
+                      </Button>
                     </div>
-                    {/* Class */}
-                    {selectedTrade && (
+
+                    {!searchMode ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Trade *</Label>
+                          <Select value={selectedTrade} onValueChange={setSelectedTrade}>
+                            <SelectTrigger><SelectValue placeholder="Select trade" /></SelectTrigger>
+                            <SelectContent>
+                              {trades.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} ({t.abbreviation})</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {selectedTrade && (
+                          <div className="space-y-2">
+                            <Label>Class *</Label>
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                              <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                              <SelectContent>
+                                {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        {selectedClass && (
+                          <div className="space-y-2">
+                            <Label>Student *</Label>
+                            <Select value={form.student_id} onValueChange={(v) => setForm(p => ({ ...p, student_id: v }))}>
+                              <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
+                              <SelectContent>
+                                {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </>
+                    ) : (
                       <div className="space-y-2">
-                        <Label>Class *</Label>
-                        <Select value={selectedClass} onValueChange={setSelectedClass}>
-                          <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                          <SelectContent>
-                            {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    {/* Student */}
-                    {selectedClass && (
-                      <div className="space-y-2">
-                        <Label>Student *</Label>
-                        <Select value={form.student_id} onValueChange={(v) => setForm(p => ({ ...p, student_id: v }))}>
-                          <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
-                          <SelectContent>
-                            {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                        <Label>Search Student *</Label>
+                        <Input placeholder="Type student name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        {searchResults.length > 0 && (
+                          <div className="max-h-40 overflow-y-auto rounded-md border">
+                            {searchResults.map((s) => (
+                              <button key={s.id} type="button"
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-accent ${form.student_id === s.id ? "bg-accent text-accent-foreground" : ""}`}
+                                onClick={() => setForm(p => ({ ...p, student_id: s.id }))}>
+                                {s.full_name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
-                ) : (
-                  <div className="space-y-2">
-                    <Label>Search Student *</Label>
-                    <Input placeholder="Type student name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                    {searchResults.length > 0 && (
-                      <div className="max-h-40 overflow-y-auto rounded-md border">
-                        {searchResults.map((s) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-accent ${form.student_id === s.id ? "bg-accent text-accent-foreground" : ""}`}
-                            onClick={() => setForm(p => ({ ...p, student_id: s.id }))}
-                          >
-                            {s.full_name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 )}
 
                 <div className="space-y-2">
@@ -215,10 +262,12 @@ const Discipline = () => {
                   <Textarea value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Action Taken</Label>
+                  <Label>{form.record_type === "positive" ? "Award Details" : "Action Taken"}</Label>
                   <Input value={form.action_taken} onChange={(e) => setForm(p => ({ ...p, action_taken: e.target.value }))} />
                 </div>
-                <Button type="submit" className="w-full" disabled={!form.student_id || !form.category}>Save Record</Button>
+                <Button type="submit" className="w-full" disabled={!form.student_id || !form.category}>
+                  {editingRecord ? "Update Record" : "Save Record"}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -228,16 +277,18 @@ const Discipline = () => {
       <Card>
         <CardContent className="p-0">
           {records.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">No discipline records yet.</div>
+            <div className="p-6 text-center text-muted-foreground">No records yet.</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Student</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>Action/Details</TableHead>
+                  {canEdit && <TableHead></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -245,9 +296,21 @@ const Discipline = () => {
                   <TableRow key={r.id}>
                     <TableCell>{new Date(r.mistake_date).toLocaleDateString()}</TableCell>
                     <TableCell className="font-medium">{(r.students as any)?.full_name}</TableCell>
+                    <TableCell>
+                      <Badge variant={(r.record_type || "negative") === "positive" ? "default" : "destructive"}>
+                        {(r.record_type || "negative") === "positive" ? "Award" : "Discipline"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{r.category}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{r.description ?? "—"}</TableCell>
                     <TableCell>{r.action_taken ?? "—"}</TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

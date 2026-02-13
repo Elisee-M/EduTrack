@@ -58,6 +58,7 @@ const Students = () => {
                   <TableHead>Reg. No</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Trade</TableHead>
+                  <TableHead>Responsibility</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -69,6 +70,11 @@ const Students = () => {
                     <TableCell>{s.registration_number}</TableCell>
                     <TableCell>{(s.classes as any)?.name ?? "—"}</TableCell>
                     <TableCell>{(s.trades as any)?.name ?? "—"}</TableCell>
+                    <TableCell>
+                      {s.responsibility ? (
+                        <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs">{s.responsibility}</Badge>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={s.status === "Active" ? "default" : "secondary"}>{s.status}</Badge>
                     </TableCell>

@@ -64,6 +64,7 @@ export type Database = {
           description: string | null
           id: string
           mistake_date: string
+          record_type: string
           recorded_by: string
           school_id: string
           student_id: string
@@ -75,6 +76,7 @@ export type Database = {
           description?: string | null
           id?: string
           mistake_date?: string
+          record_type?: string
           recorded_by: string
           school_id: string
           student_id: string
@@ -86,6 +88,7 @@ export type Database = {
           description?: string | null
           id?: string
           mistake_date?: string
+          record_type?: string
           recorded_by?: string
           school_id?: string
           student_id?: string
@@ -133,6 +136,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      school_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          school_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["app_role"]
+          school_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          school_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_invitations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schools: {
         Row: {
@@ -193,6 +234,7 @@ export type Database = {
           parent_name: string | null
           parent_phone: string | null
           registration_number: string
+          responsibility: string | null
           school_id: string
           status: string
           trade_id: string | null
@@ -214,6 +256,7 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           registration_number: string
+          responsibility?: string | null
           school_id: string
           status?: string
           trade_id?: string | null
@@ -235,6 +278,7 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           registration_number?: string
+          responsibility?: string | null
           school_id?: string
           status?: string
           trade_id?: string | null

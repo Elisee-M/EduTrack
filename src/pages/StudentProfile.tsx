@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Award, AlertTriangle } from "lucide-react";
 
 const StudentProfile = () => {
   const { id } = useParams();
@@ -77,6 +77,7 @@ const StudentProfile = () => {
       home_location: form.home_location || null,
       admission_date: form.admission_date || null,
       status: form.status,
+      responsibility: form.responsibility || null,
     }).eq("id", id);
     setSaving(false);
 
@@ -104,6 +105,8 @@ const StudentProfile = () => {
 
   if (!student) return <div className="p-6 text-muted-foreground">Loading...</div>;
 
+  const responsibilities = ["Head Boy", "Head Girl", "Academic Prefect", "Discipline Prefect", "Sports Captain", "Class Monitor", "Library Prefect", "Health Prefect", "Environment Prefect"];
+
   const info = [
     ["Registration No.", student.registration_number],
     ["Class", (student.classes as any)?.name ?? "—"],
@@ -112,6 +115,7 @@ const StudentProfile = () => {
     ["Date of Birth", student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"],
     ["Gender", student.gender ?? "—"],
     ["Admission Date", student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"],
+    ["Responsibility", student.responsibility ?? "—"],
     ["Home Location", student.home_location ?? "—"],
   ];
 
@@ -216,6 +220,16 @@ const StudentProfile = () => {
                 <Label>Admission Date</Label>
                 <Input type="date" value={form.admission_date || ""} onChange={(e) => handleChange("admission_date", e.target.value)} />
               </div>
+              <div className="space-y-2">
+                <Label>Responsibility</Label>
+                <Select value={form.responsibility || ""} onValueChange={(v) => handleChange("responsibility", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select responsibility" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {responsibilities.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <h3 className="text-lg font-semibold pt-4 pb-2">Parent / Guardian Information</h3>
@@ -288,10 +302,22 @@ const StudentProfile = () => {
               {discipline.map((d) => (
                 <div key={d.id} className="rounded-md border p-3">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{d.category}</p>
-                      <p className="text-xs text-muted-foreground">{d.description}</p>
-                      {d.action_taken && <p className="mt-1 text-xs text-muted-foreground">Action: {d.action_taken}</p>}
+                    <div className="flex items-start gap-2">
+                      {(d.record_type || "negative") === "positive" ? (
+                        <Award className="h-4 w-4 text-primary mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{d.category}</p>
+                          <Badge variant={(d.record_type || "negative") === "positive" ? "default" : "destructive"} className="text-xs">
+                            {(d.record_type || "negative") === "positive" ? "Award" : "Discipline"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{d.description}</p>
+                        {d.action_taken && <p className="mt-1 text-xs text-muted-foreground">Details: {d.action_taken}</p>}
+                      </div>
                     </div>
                     <span className="text-xs text-muted-foreground">{new Date(d.mistake_date).toLocaleDateString()}</span>
                   </div>

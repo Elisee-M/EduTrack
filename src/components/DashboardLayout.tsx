@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchool } from "@/contexts/SchoolContext";
 import {
-  LayoutDashboard, Users, BookOpen, AlertTriangle, Search, LogOut, GraduationCap, ChevronRight,
+  LayoutDashboard, Users, BookOpen, AlertTriangle, Search, LogOut, GraduationCap, ChevronRight, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,7 @@ const navItems = [
   { to: "/dashboard/classes", icon: BookOpen, label: "Classes" },
   { to: "/dashboard/discipline", icon: AlertTriangle, label: "Discipline" },
   { to: "/dashboard/search", icon: Search, label: "Search" },
+  { to: "/dashboard/team", icon: Shield, label: "Team" },
 ];
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {

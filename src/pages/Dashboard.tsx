@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/contexts/SchoolContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, AlertTriangle, UserPlus, Search } from "lucide-react";
+import { Users, BookOpen, AlertTriangle, UserPlus, Search, Shield } from "lucide-react";
 
 const Dashboard = () => {
   const { school } = useSchool();
@@ -87,6 +87,9 @@ const Dashboard = () => {
         </Button>
         <Button variant="outline" asChild>
           <Link to="/dashboard/classes"><BookOpen className="mr-2 h-4 w-4" />View Classes</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/dashboard/team"><Shield className="mr-2 h-4 w-4" />Manage Team</Link>
         </Button>
       </div>
 
