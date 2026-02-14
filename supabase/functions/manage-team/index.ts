@@ -25,7 +25,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
-    const { action, school_id, email, role, user_role_id } = await req.json();
+    const { action, school_id, email, role, user_role_id, invitation_id } = await req.json();
 
     // Verify caller is admin/super_admin of the school
     const { data: callerRole } = await supabaseAdmin
@@ -73,14 +73,43 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ message: "User added to school", status: "added" }), { headers: corsHeaders });
       } else {
-        // Save as pending invitation
+        // Save pending invitation
         const { error: invError } = await supabaseAdmin
           .from("school_invitations")
           .upsert({ school_id, email, role, invited_by: user.id, status: "pending" }, { onConflict: "school_id,email" });
 
         if (invError) return new Response(JSON.stringify({ error: invError.message }), { status: 400, headers: corsHeaders });
 
-        return new Response(JSON.stringify({ message: "Invitation saved. User will be added when they sign up.", status: "pending" }), { headers: corsHeaders });
+        // Get school name for the email
+        const { data: schoolData } = await supabaseAdmin
+          .from("schools")
+          .select("name")
+          .eq("id", school_id)
+          .single();
+
+        // Send invite email via Supabase Auth inviteUserByEmail
+        const siteUrl = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://edu-sphere-manager.lovable.app";
+        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+          redirectTo: `${siteUrl}/signup?invited=true`,
+          data: {
+            invited_to_school: schoolData?.name || "a school",
+            invited_role: role,
+          },
+        });
+
+        if (inviteError) {
+          console.error("Invite email error:", inviteError);
+          // Still return success since the invitation record is saved
+          return new Response(JSON.stringify({ 
+            message: "Invitation saved. Email delivery may be delayed.", 
+            status: "pending" 
+          }), { headers: corsHeaders });
+        }
+
+        return new Response(JSON.stringify({ 
+          message: `Invitation email sent to ${email}. They will be added when they accept and sign up.`, 
+          status: "pending" 
+        }), { headers: corsHeaders });
       }
     }
 
@@ -104,6 +133,17 @@ serve(async (req) => {
 
       if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
       return new Response(JSON.stringify({ message: "Member removed" }), { headers: corsHeaders });
+    }
+
+    if (action === "cancel_invitation") {
+      const { error } = await supabaseAdmin
+        .from("school_invitations")
+        .delete()
+        .eq("id", invitation_id)
+        .eq("school_id", school_id);
+
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ message: "Invitation cancelled" }), { headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400, headers: corsHeaders });

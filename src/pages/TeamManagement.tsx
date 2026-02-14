@@ -14,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, UserPlus, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Mail, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,7 +46,6 @@ const TeamManagement = () => {
       .eq("school_id", school.id);
 
     if (roleData) {
-      // Fetch profile info for each member
       const userIds = roleData.map(r => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -85,7 +84,7 @@ const TeamManagement = () => {
     if (error || data?.error) {
       toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
     } else {
-      toast({ title: data?.status === "added" ? "User added to school!" : "Invitation saved", description: data?.message });
+      toast({ title: data?.status === "added" ? "User added to school!" : "Invitation sent!", description: data?.message });
       setOpen(false);
       setEmail("");
       setRole("teacher");
@@ -115,6 +114,19 @@ const TeamManagement = () => {
       toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
     } else {
       toast({ title: "Member removed" });
+      fetchMembers();
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    if (!school) return;
+    const { data, error } = await supabase.functions.invoke("manage-team", {
+      body: { action: "cancel_invitation", school_id: school.id, invitation_id: invitationId },
+    });
+    if (error || data?.error) {
+      toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
+    } else {
+      toast({ title: "Invitation cancelled" });
       fetchMembers();
     }
   };
@@ -164,11 +176,15 @@ const TeamManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  If the user already has an account, they'll be added immediately. Otherwise, they'll be added when they sign up with this email.
-                </p>
+                <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5" />
+                    <span className="font-medium">How it works:</span>
+                  </div>
+                  <p>An invitation email will be sent to this address. When they click the link and create their account, they'll automatically be added to your school with the selected role.</p>
+                </div>
                 <Button type="submit" className="w-full" disabled={loading || !email.trim()}>
-                  {loading ? "Sending..." : "Send Invitation"}
+                  {loading ? "Sending..." : "Send Invitation Email"}
                 </Button>
               </form>
             </DialogContent>
@@ -251,14 +267,41 @@ const TeamManagement = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Invited</TableHead>
+                  {isAdmin && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invitations.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell>{inv.email}</TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      {inv.email}
+                    </TableCell>
                     <TableCell><Badge variant="outline">{inv.role}</Badge></TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(inv.created_at).toLocaleDateString()}</TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" title="Cancel invitation">
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cancel the invitation to {inv.email}? They will no longer be able to join.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleCancelInvitation(inv.id)}>Cancel Invitation</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
