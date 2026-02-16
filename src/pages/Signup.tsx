@@ -105,7 +105,7 @@ const Signup = () => {
   }
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
-  if (user) return <Navigate to="/create-school" replace />;
+  if (user && !settingPassword && !isInvited) return <Navigate to="/create-school" replace />;
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();

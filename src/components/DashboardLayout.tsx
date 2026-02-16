@@ -7,13 +7,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/dashboard/students", icon: Users, label: "Students" },
-  { to: "/dashboard/classes", icon: BookOpen, label: "Classes" },
-  { to: "/dashboard/discipline", icon: AlertTriangle, label: "Discipline" },
-  { to: "/dashboard/search", icon: Search, label: "Search" },
-  { to: "/dashboard/team", icon: Shield, label: "Team" },
+type AppRole = "super_admin" | "admin" | "teacher" | "viewer";
+
+const allNavItems = [
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "admin", "teacher", "viewer"] as AppRole[] },
+  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "admin", "teacher"] as AppRole[] },
+  { to: "/dashboard/classes", icon: BookOpen, label: "Classes", roles: ["super_admin", "admin", "teacher"] as AppRole[] },
+  { to: "/dashboard/discipline", icon: AlertTriangle, label: "Discipline", roles: ["super_admin", "admin", "teacher"] as AppRole[] },
+  { to: "/dashboard/search", icon: Search, label: "Search", roles: ["super_admin", "admin", "teacher", "viewer"] as AppRole[] },
+  { to: "/dashboard/team", icon: Shield, label: "Team", roles: ["super_admin", "admin"] as AppRole[] },
 ];
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {
@@ -28,6 +30,8 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
   };
 
   const roleLabel = userRole?.role?.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()) ?? "";
+  const currentRole = userRole?.role as AppRole | undefined;
+  const navItems = allNavItems.filter((item) => !currentRole || item.roles.includes(currentRole));
 
   return (
     <div className="flex min-h-screen flex-col">

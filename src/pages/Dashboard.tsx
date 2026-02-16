@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/contexts/SchoolContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, BookOpen, AlertTriangle, UserPlus, Search, Shield } from "lucide-react";
 
 const Dashboard = () => {
-  const { school } = useSchool();
+  const { school, userRole } = useSchool();
+  const isAdmin = userRole?.role === "super_admin" || userRole?.role === "admin";
+  const isTeacherOrAbove = isAdmin || userRole?.role === "teacher";
   const [stats, setStats] = useState({ students: 0, classes: 0, disciplines: 0 });
   const [recentDiscipline, setRecentDiscipline] = useState<any[]>([]);
 
@@ -76,21 +79,27 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link to="/dashboard/students/register"><UserPlus className="mr-2 h-4 w-4" />Register Student</Link>
-        </Button>
+        {isTeacherOrAbove && (
+          <Button asChild>
+            <Link to="/dashboard/students/register"><UserPlus className="mr-2 h-4 w-4" />Register Student</Link>
+          </Button>
+        )}
         <Button variant="outline" asChild>
           <Link to="/dashboard/students"><Users className="mr-2 h-4 w-4" />View All Students</Link>
         </Button>
         <Button variant="outline" asChild>
           <Link to="/dashboard/search"><Search className="mr-2 h-4 w-4" />Search Student</Link>
         </Button>
-        <Button variant="outline" asChild>
-          <Link to="/dashboard/classes"><BookOpen className="mr-2 h-4 w-4" />View Classes</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link to="/dashboard/team"><Shield className="mr-2 h-4 w-4" />Manage Team</Link>
-        </Button>
+        {isTeacherOrAbove && (
+          <Button variant="outline" asChild>
+            <Link to="/dashboard/classes"><BookOpen className="mr-2 h-4 w-4" />View Classes</Link>
+          </Button>
+        )}
+        {isAdmin && (
+          <Button variant="outline" asChild>
+            <Link to="/dashboard/team"><Shield className="mr-2 h-4 w-4" />Manage Team</Link>
+          </Button>
+        )}
       </div>
 
       {/* Recent Discipline */}
