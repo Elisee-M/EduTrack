@@ -92,7 +92,7 @@ const StudentProfile = () => {
 
   const handleDelete = async () => {
     if (!id) return;
-    const { error } = await supabase.from("students").update({ is_deleted: true }).eq("id", id);
+    const { error } = await supabase.rpc("soft_delete_student", { p_student_id: id });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {

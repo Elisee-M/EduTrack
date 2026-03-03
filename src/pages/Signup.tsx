@@ -6,77 +6,68 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Mail } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { GraduationCap, Mail, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+type Step = "form" | "otp" | "invited-setup";
 
 const Signup = () => {
   const { user, loading: authLoading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isInvited, setIsInvited] = useState(false);
-  const [settingPassword, setSettingPassword] = useState(false);
+  const [step, setStep] = useState<Step>("form");
+  const [otpCode, setOtpCode] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if this is an invited user coming from the email link
     const invited = searchParams.get("invited") === "true";
-    setIsInvited(invited);
-
-    // Listen for auth events - when user confirms invite, they'll have a session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && invited)) {
-        // User clicked the invite link and has a session, prompt to set password
-        if (session?.user) {
-          setSettingPassword(true);
-          setEmail(session.user.email || "");
+    if (invited) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && invited)) {
+          if (session?.user) {
+            setEmail(session.user.email || "");
+            setStep("invited-setup");
+          }
         }
-      }
-    });
-
-    return () => subscription.unsubscribe();
+      });
+      return () => subscription.unsubscribe();
+    }
   }, [searchParams]);
 
-  // If invited user already has a session and needs to set password
-  if (settingPassword && user) {
+  // Invited user completing profile
+  if (step === "invited-setup" && user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Mail className="h-6 w-6 text-primary" />
+              <ShieldCheck className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Complete Your Account</CardTitle>
-            <CardDescription>You've been invited to join a school. Please set up your profile.</CardDescription>
+            <CardTitle>Complete Your Profile</CardTitle>
+            <CardDescription>You've been invited to join a school. Please fill in your details to continue.</CardDescription>
           </CardHeader>
           <CardContent>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
-
-                // Update user metadata with full name
                 const { error: updateError } = await supabase.auth.updateUser({
                   password,
                   data: { full_name: fullName },
                 });
-
                 if (updateError) {
                   toast({ title: "Error", description: updateError.message, variant: "destructive" });
                   setLoading(false);
                   return;
                 }
-
-                // Update profile
-                await supabase
-                  .from("profiles")
-                  .update({ full_name: fullName })
-                  .eq("user_id", user.id);
-
-                toast({ title: "Account set up!", description: "Welcome to your school." });
+                await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", user.id);
+                toast({ title: "Profile complete!", description: "Welcome to your school." });
                 navigate("/dashboard");
                 setLoading(false);
               }}
@@ -91,11 +82,15 @@ const Signup = () => {
                 <Input id="email" type="email" value={email} disabled className="bg-muted" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +255 700 000 000" />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="password">Set Password *</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Choose a password" required minLength={6} />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Choose a strong password" required minLength={6} />
               </div>
               <Button type="submit" className="w-full" disabled={loading || !fullName.trim() || !password}>
-                {loading ? "Setting up..." : "Complete Setup"}
+                {loading ? "Setting up..." : "Complete Setup & Continue"}
               </Button>
             </form>
           </CardContent>
@@ -105,8 +100,91 @@ const Signup = () => {
   }
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
-  if (user && !settingPassword && !isInvited) return <Navigate to="/create-school" replace />;
+  if (user && step !== "invited-setup") return <Navigate to="/create-school" replace />;
 
+  // Step 2: OTP verification
+  if (step === "otp") {
+    const handleVerifyOtp = async () => {
+      if (otpCode.length !== 6) return;
+      setLoading(true);
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: "signup",
+      });
+      if (error) {
+        toast({ title: "Verification failed", description: error.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      toast({ title: "Email verified!", description: "Your account is ready. Let's set up your school." });
+      navigate("/create-school");
+      setLoading(false);
+    };
+
+    const handleResend = async () => {
+      setLoading(true);
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        toast({ title: "Resend failed", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Code resent", description: "Check your email for a new verification code." });
+      }
+      setLoading(false);
+    };
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Mail className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Verify your email</CardTitle>
+            <CardDescription>
+              We sent a 6-digit verification code to <span className="font-medium text-foreground">{email}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex justify-center">
+              <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <Button onClick={handleVerifyOtp} className="w-full" disabled={loading || otpCode.length !== 6}>
+              {loading ? "Verifying..." : "Verify & Continue"}
+            </Button>
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => { setStep("form"); setOtpCode(""); }}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> Back
+              </button>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={loading}
+                className="text-primary hover:underline"
+              >
+                Resend code
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 1: Signup form
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -116,7 +194,6 @@ const Signup = () => {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/create-school`,
       },
     });
 
@@ -126,11 +203,14 @@ const Signup = () => {
       return;
     }
 
+    // If auto-confirm is on, user is directly signed in
     if (data.session) {
       toast({ title: "Account created!", description: "Let's set up your school." });
       navigate("/create-school");
     } else {
-      toast({ title: "Check your email", description: "We sent you a confirmation link. Please verify your email to continue." });
+      // Email confirmation required — show OTP step
+      toast({ title: "Code sent!", description: "Check your email for the verification code." });
+      setStep("otp");
     }
     setLoading(false);
   };
@@ -149,15 +229,15 @@ const Signup = () => {
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" required minLength={6} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}

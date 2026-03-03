@@ -385,6 +385,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      soft_delete_student: {
+        Args: { p_student_id: string }
+        Returns: undefined
+      }
       user_belongs_to_school: {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean

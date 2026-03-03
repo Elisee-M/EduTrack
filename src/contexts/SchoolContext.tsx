@@ -77,7 +77,8 @@ export const SchoolProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchSchoolData();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <SchoolContext.Provider value={{ school, userRole, loading, refreshSchool: fetchSchoolData }}>
