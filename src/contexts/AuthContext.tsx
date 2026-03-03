@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up the auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!initialized.current) return;
-      // On SIGNED_OUT, always clear; otherwise only update if token changed
       if (event === "SIGNED_OUT") {
         lastSessionRef.current = null;
         setSession(null);
@@ -49,8 +48,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Then fetch the initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       initialized.current = true;
+      // Verify the user still exists by calling getUser (server-side check)
+      if (initialSession) {
+        const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+        if (error || !verifiedUser) {
+          // User was deleted from DB — clear stale session
+          await supabase.auth.signOut();
+          lastSessionRef.current = null;
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+      }
       lastSessionRef.current = initialSession?.access_token ?? null;
       setSession(initialSession);
       setLoading(false);

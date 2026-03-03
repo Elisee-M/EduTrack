@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SchoolProvider, useSchool } from "@/contexts/SchoolContext";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -18,6 +19,7 @@ import ClassStudents from "./pages/ClassStudents";
 import Discipline from "./pages/Discipline";
 import SearchStudents from "./pages/SearchStudents";
 import TeamManagement from "./pages/TeamManagement";
+import PlatformAdmin from "./pages/PlatformAdmin";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -32,9 +34,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const SchoolRoute = ({ children }: { children: React.ReactNode }) => {
   const { school, loading } = useSchool();
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  const { isPlatformAdmin, loading: paLoading } = usePlatformAdmin();
+  if (loading || paLoading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  // Platform admins get redirected to their dashboard
+  if (isPlatformAdmin) return <Navigate to="/platform-admin" replace />;
   if (!school) return <Navigate to="/create-school" replace />;
   return <DashboardLayout>{children}</DashboardLayout>;
+};
+
+const PlatformAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isPlatformAdmin, loading } = usePlatformAdmin();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!isPlatformAdmin) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 };
 
 const App = () => (
@@ -50,6 +62,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/create-school" element={<ProtectedRoute><CreateSchool /></ProtectedRoute>} />
+              <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminRoute><PlatformAdmin /></PlatformAdminRoute></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><SchoolRoute><Dashboard /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/students" element={<ProtectedRoute><SchoolRoute><Students /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/students/register" element={<ProtectedRoute><SchoolRoute><RegisterStudent /></SchoolRoute></ProtectedRoute>} />
