@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          target_school_ids: string[] | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          target_school_ids?: string[] | null
+          target_type?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          target_school_ids?: string[] | null
+          target_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          school_id: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          school_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          school_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           created_at: string
@@ -205,6 +271,7 @@ export type Database = {
           location: string | null
           name: string
           phone: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -218,6 +285,7 @@ export type Database = {
           location?: string | null
           name: string
           phone?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -231,6 +299,7 @@ export type Database = {
           location?: string | null
           name?: string
           phone?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
