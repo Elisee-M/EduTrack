@@ -176,6 +176,70 @@ export type Database = {
           },
         ]
       }
+      grades: {
+        Row: {
+          academic_year: string
+          created_at: string
+          id: string
+          marks: number
+          recorded_by: string
+          remarks: string | null
+          school_id: string
+          student_id: string
+          subject_id: string
+          term: number
+          updated_at: string
+        }
+        Insert: {
+          academic_year: string
+          created_at?: string
+          id?: string
+          marks: number
+          recorded_by: string
+          remarks?: string | null
+          school_id: string
+          student_id: string
+          subject_id: string
+          term: number
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string
+          created_at?: string
+          id?: string
+          marks?: number
+          recorded_by?: string
+          remarks?: string | null
+          school_id?: string
+          student_id?: string
+          subject_id?: string
+          term?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_admins: {
         Row: {
           created_at: string
@@ -391,6 +455,38 @@ export type Database = {
             columns: ["trade_id"]
             isOneToOne: false
             referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          abbreviation: string | null
+          created_at: string
+          id: string
+          name: string
+          school_id: string
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          school_id: string
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]

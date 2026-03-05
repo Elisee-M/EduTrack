@@ -5,7 +5,8 @@ import { useSchool } from "@/contexts/SchoolContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, AlertTriangle, UserPlus, Search, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Users, BookOpen, AlertTriangle, UserPlus, Search, Shield, Megaphone } from "lucide-react";
 
 const Dashboard = () => {
   const { school, userRole } = useSchool();
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const isTeacherOrAbove = isAdmin || userRole?.role === "teacher";
   const [stats, setStats] = useState({ students: 0, classes: 0, disciplines: 0 });
   const [recentDiscipline, setRecentDiscipline] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   useEffect(() => {
     if (!school) return;
@@ -23,12 +25,18 @@ const Dashboard = () => {
         supabase.from("discipline_records").select("id", { count: "exact", head: true }).eq("school_id", school.id),
         supabase.from("discipline_records").select("*, students(full_name)").eq("school_id", school.id).order("created_at", { ascending: false }).limit(5),
       ]);
+      const { data: announcementsData } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
       setStats({
         students: studentsRes.count ?? 0,
         classes: classesRes.count ?? 0,
         disciplines: discRes.count ?? 0,
       });
       setRecentDiscipline(recentRes.data ?? []);
+      setAnnouncements(announcementsData ?? []);
     };
     fetchStats();
   }, [school]);
@@ -101,6 +109,31 @@ const Dashboard = () => {
           </Button>
         )}
       </div>
+
+      {/* Announcements from Platform Admin */}
+      {announcements.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              Announcements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {announcements.map((a) => (
+                <div key={a.id} className="rounded-md border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-start justify-between">
+                    <p className="text-sm font-semibold">{a.title}</p>
+                    <Badge variant="outline" className="text-xs">{new Date(a.created_at).toLocaleDateString()}</Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{a.message}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Discipline */}
       <Card>

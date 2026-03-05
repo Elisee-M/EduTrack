@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Pencil, Trash2, Award, AlertTriangle } from "lucide-react";
+import StudentReportCard from "@/components/StudentReportCard";
 
 const StudentProfile = () => {
   const { id } = useParams();
@@ -292,41 +294,54 @@ const StudentProfile = () => {
         </div>
       )}
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Discipline Records</CardTitle></CardHeader>
-        <CardContent>
-          {discipline.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No discipline records.</p>
-          ) : (
-            <div className="space-y-3">
-              {discipline.map((d) => (
-                <div key={d.id} className="rounded-md border p-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-2">
-                      {(d.record_type || "negative") === "positive" ? (
-                        <Award className="h-4 w-4 text-primary mt-0.5" />
-                      ) : (
-                        <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                      )}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{d.category}</p>
-                          <Badge variant={(d.record_type || "negative") === "positive" ? "default" : "destructive"} className="text-xs">
-                            {(d.record_type || "negative") === "positive" ? "Award" : "Discipline"}
-                          </Badge>
+      <Tabs defaultValue="discipline" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="discipline">Discipline Records</TabsTrigger>
+          <TabsTrigger value="report-card">Report Card</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="discipline">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Discipline Records</CardTitle></CardHeader>
+            <CardContent>
+              {discipline.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No discipline records.</p>
+              ) : (
+                <div className="space-y-3">
+                  {discipline.map((d) => (
+                    <div key={d.id} className="rounded-md border p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2">
+                          {(d.record_type || "negative") === "positive" ? (
+                            <Award className="h-4 w-4 text-primary mt-0.5" />
+                          ) : (
+                            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">{d.category}</p>
+                              <Badge variant={(d.record_type || "negative") === "positive" ? "default" : "destructive"} className="text-xs">
+                                {(d.record_type || "negative") === "positive" ? "Award" : "Discipline"}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{d.description}</p>
+                            {d.action_taken && <p className="mt-1 text-xs text-muted-foreground">Details: {d.action_taken}</p>}
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">{d.description}</p>
-                        {d.action_taken && <p className="mt-1 text-xs text-muted-foreground">Details: {d.action_taken}</p>}
+                        <span className="text-xs text-muted-foreground">{new Date(d.mistake_date).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">{new Date(d.mistake_date).toLocaleDateString()}</span>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="report-card">
+          {school && <StudentReportCard studentId={id!} schoolId={school.id} />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

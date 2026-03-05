@@ -7,11 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+interface SchoolOption {
+  id: string;
+  name: string;
+}
 
 const Announcements = () => {
   const { user } = useAuth();
@@ -21,38 +30,66 @@ const Announcements = () => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [targetType, setTargetType] = useState<"all" | "selected">("all");
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState<string[]>([]);
 
-  const fetch = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
-    setAnnouncements(data ?? []);
+    const [{ data: annData }, { data: schoolData }] = await Promise.all([
+      supabase.from("announcements").select("*").order("created_at", { ascending: false }),
+      supabase.from("schools").select("id, name").eq("status", "active").order("name"),
+    ]);
+    setAnnouncements(annData ?? []);
+    setSchools(schoolData ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchData(); }, []);
+
+  const toggleSchool = (id: string) => {
+    setSelectedSchoolIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
 
   const handleCreate = async () => {
     if (!title.trim() || !message.trim()) return;
-    const { error } = await supabase.from("announcements").insert({
+    if (targetType === "selected" && selectedSchoolIds.length === 0) {
+      toast({ title: "Select at least one school", variant: "destructive" });
+      return;
+    }
+
+    const payload: any = {
       title: title.trim(),
       message: message.trim(),
-      target_type: "all",
+      target_type: targetType,
       created_by: user!.id,
-    } as any);
+      ...(targetType === "selected" ? { target_school_ids: selectedSchoolIds } : { target_school_ids: [] }),
+    };
+
+    const { error } = await supabase.from("announcements").insert(payload);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Announcement sent" });
       setTitle("");
       setMessage("");
+      setTargetType("all");
+      setSelectedSchoolIds([]);
       setOpen(false);
-      fetch();
+      fetchData();
     }
   };
 
   const handleDelete = async (id: string) => {
     await supabase.from("announcements").delete().eq("id", id);
-    fetch();
+    fetchData();
+  };
+
+  const getSchoolNames = (ids: string[] | null) => {
+    if (!ids || ids.length === 0) return null;
+    return ids.map((id) => schools.find((s) => s.id === id)?.name ?? id).join(", ");
   };
 
   return (
@@ -62,12 +99,49 @@ const Announcements = () => {
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" /> New Announcement</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Broadcast Announcement</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <Textarea placeholder="Message to all schools..." value={message} onChange={(e) => setMessage(e.target.value)} rows={4} />
-              <Button onClick={handleCreate} className="w-full" disabled={!title.trim() || !message.trim()}>Send to All Schools</Button>
+              <Textarea placeholder="Message..." value={message} onChange={(e) => setMessage(e.target.value)} rows={4} />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Target</label>
+                <Select value={targetType} onValueChange={(v) => { setTargetType(v as "all" | "selected"); setSelectedSchoolIds([]); }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Schools</SelectItem>
+                    <SelectItem value="selected">Selected Schools</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {targetType === "selected" && (
+                <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border p-3">
+                  {schools.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No active schools found.</p>
+                  ) : (
+                    schools.map((s) => (
+                      <label key={s.id} className="flex items-center gap-2 cursor-pointer py-1">
+                        <Checkbox
+                          checked={selectedSchoolIds.includes(s.id)}
+                          onCheckedChange={() => toggleSchool(s.id)}
+                        />
+                        <span className="text-sm">{s.name}</span>
+                      </label>
+                    ))
+                  )}
+                  {selectedSchoolIds.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">{selectedSchoolIds.length} school(s) selected</p>
+                  )}
+                </div>
+              )}
+
+              <Button onClick={handleCreate} className="w-full" disabled={!title.trim() || !message.trim()}>
+                {targetType === "all" ? "Send to All Schools" : `Send to ${selectedSchoolIds.length} School(s)`}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -92,7 +166,11 @@ const Announcements = () => {
                   <TableRow key={a.id}>
                     <TableCell className="font-medium">{a.title}</TableCell>
                     <TableCell className="max-w-xs truncate">{a.message}</TableCell>
-                    <TableCell><Badge variant="outline">{a.target_type}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {a.target_type === "all" ? "All Schools" : getSchoolNames(a.target_school_ids) || "Selected"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{new Date(a.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(a.id)}>
