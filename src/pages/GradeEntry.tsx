@@ -28,6 +28,7 @@ const GradeEntry = () => {
 
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
@@ -45,12 +46,36 @@ const GradeEntry = () => {
       supabase.from("subjects").select("id, name, abbreviation").eq("school_id", school.id).order("name"),
     ]).then(([c, s]) => {
       setClasses(c.data ?? []);
-      setSubjects(s.data ?? []);
+      setAllSubjects(s.data ?? []);
     });
-    // Default academic year
     const now = new Date();
     setAcademicYear(`${now.getFullYear()}-${now.getFullYear() + 1}`);
   }, [school]);
+
+  // Load subjects for selected class
+  useEffect(() => {
+    if (!school || !selectedClassId) {
+      setSubjects([]);
+      setSelectedSubjectId("");
+      return;
+    }
+    const loadClassSubjects = async () => {
+      const { data } = await supabase
+        .from("class_subjects" as any)
+        .select("subject_id")
+        .eq("class_id", selectedClassId)
+        .eq("school_id", school.id);
+      const subjectIds = ((data as any[]) ?? []).map((cs: any) => cs.subject_id);
+      if (subjectIds.length > 0) {
+        setSubjects(allSubjects.filter(s => subjectIds.includes(s.id)));
+      } else {
+        // Fallback: show all subjects if none assigned
+        setSubjects(allSubjects);
+      }
+      setSelectedSubjectId("");
+    };
+    loadClassSubjects();
+  }, [selectedClassId, school, allSubjects]);
 
   const loadStudentsAndGrades = async () => {
     if (!school || !selectedClassId || !selectedSubjectId || !selectedTerm || !academicYear) return;
@@ -141,8 +166,8 @@ const GradeEntry = () => {
             </div>
             <div className="space-y-1">
               <Label>Subject *</Label>
-              <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId}>
-                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+              <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId} disabled={!selectedClassId}>
+                <SelectTrigger><SelectValue placeholder={selectedClassId ? "Select subject" : "Select class first"} /></SelectTrigger>
                 <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
