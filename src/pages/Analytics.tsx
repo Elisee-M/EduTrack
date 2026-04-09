@@ -4,7 +4,7 @@ import { useSchool } from "@/contexts/SchoolContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from "recharts";
 import { TrendingUp, Award, BarChart3, PieChart as PieIcon } from "lucide-react";
 
 const GRADE_COLORS = {
@@ -244,23 +244,27 @@ const Analytics = () => {
             {/* Average marks per subject */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  Average Marks per Subject
-                </CardTitle>
+                <CardTitle className="text-lg font-bold">Average Marks per Subject</CardTitle>
+                <p className="text-sm text-muted-foreground">Performance across curriculum</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={avgPerSubject} layout="vertical" margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="name" type="category" width={60} tick={{ fontSize: 12 }} />
+                  <AreaChart data={avgPerSubject} margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="avgFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                     <Tooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
                       formatter={(val: number) => [`${val}%`, "Average"]}
                     />
-                    <Bar dataKey="average" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
+                    <Area type="monotone" dataKey="average" stroke="hsl(142, 76%, 36%)" strokeWidth={2.5} fill="url(#avgFill)" dot={{ r: 4, fill: "white", stroke: "hsl(142, 76%, 36%)", strokeWidth: 2 }} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -268,31 +272,25 @@ const Analytics = () => {
             {/* Grade distribution */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <PieIcon className="h-4 w-4 text-primary" />
-                  Grade Distribution
-                </CardTitle>
+                <CardTitle className="text-lg font-bold">Grade Distribution</CardTitle>
+                <p className="text-sm text-muted-foreground">Marks categorized by letter grade</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie
-                      data={gradeDistribution}
-                      dataKey="count"
-                      nameKey="grade"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({ grade, count }) => `${grade}: ${count}`}
-                    >
+                  <BarChart data={gradeDistribution} margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="grade" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                      formatter={(val: number) => [val, "Students"]}
+                    />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                       {gradeDistribution.map((entry, i) => (
                         <Cell key={i} fill={entry.fill} />
                       ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                    />
-                  </PieChart>
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -302,34 +300,41 @@ const Analytics = () => {
           {trendSubjects.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Term-over-Term Trends
-                </CardTitle>
+                <CardTitle className="text-lg font-bold">Term-over-Term Trends</CardTitle>
+                <p className="text-sm text-muted-foreground">Subject averages across terms</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={termTrends} margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="term" tick={{ fontSize: 12 }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                  <AreaChart data={termTrends} margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>
+                    <defs>
+                      {trendSubjects.map((subj, i) => (
+                        <linearGradient key={subj} id={`trend-${i}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={LINE_COLORS[i % LINE_COLORS.length]} stopOpacity={0.15} />
+                          <stop offset="95%" stopColor={LINE_COLORS[i % LINE_COLORS.length]} stopOpacity={0} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="term" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                     <Tooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
                       formatter={(val: number) => [`${val}%`]}
                     />
                     <Legend />
                     {trendSubjects.map((subj, i) => (
-                      <Line
+                      <Area
                         key={subj}
                         type="monotone"
                         dataKey={subj}
                         stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
+                        strokeWidth={2.5}
+                        fill={`url(#trend-${i})`}
+                        dot={{ r: 4, fill: "white", stroke: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 2 }}
                         connectNulls
                       />
                     ))}
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
