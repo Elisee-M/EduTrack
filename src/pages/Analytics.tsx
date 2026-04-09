@@ -52,9 +52,8 @@ const Analytics = () => {
     if (!school || !selectedClassId) return;
     setLoading(true);
 
-    const academicYear = school.academic_year_start && school.academic_year_end
-      ? `${new Date(school.academic_year_start).getFullYear()}-${new Date(school.academic_year_end).getFullYear()}`
-      : `${new Date().getFullYear()}`;
+    const now = new Date();
+    const academicYear = `${now.getFullYear()}-${now.getFullYear() + 1}`;
 
     Promise.all([
       supabase.from("grades").select("*").eq("school_id", school.id).eq("academic_year", academicYear),
