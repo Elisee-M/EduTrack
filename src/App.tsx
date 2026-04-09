@@ -23,6 +23,7 @@ import PlatformAdmin from "./pages/PlatformAdmin";
 import Messages from "./pages/Messages";
 import Subjects from "./pages/Subjects";
 import GradeEntry from "./pages/GradeEntry";
+import Analytics from "./pages/Analytics";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/dashboard/team" element={<ProtectedRoute><SchoolRoute><TeamManagement /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/subjects" element={<ProtectedRoute><SchoolRoute><Subjects /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/grades" element={<ProtectedRoute><SchoolRoute><GradeEntry /></SchoolRoute></ProtectedRoute>} />
+              <Route path="/dashboard/analytics" element={<ProtectedRoute><SchoolRoute><Analytics /></SchoolRoute></ProtectedRoute>} />
               <Route path="/dashboard/messages" element={<ProtectedRoute><SchoolRoute><Messages /></SchoolRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

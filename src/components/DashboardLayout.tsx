@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchool } from "@/contexts/SchoolContext";
 import {
-  LayoutDashboard, Users, BookOpen, AlertTriangle, Search, LogOut, GraduationCap, ChevronRight, Shield, Megaphone, ClipboardList, PenLine,
+  LayoutDashboard, Users, BookOpen, AlertTriangle, Search, LogOut, GraduationCap, ChevronRight, Shield, Megaphone, ClipboardList, PenLine, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +17,7 @@ const allNavItems = [
   { to: "/dashboard/search", icon: Search, label: "Search", roles: ["super_admin", "admin", "teacher", "viewer"] as AppRole[] },
   { to: "/dashboard/subjects", icon: ClipboardList, label: "Subjects", roles: ["super_admin", "admin"] as AppRole[] },
   { to: "/dashboard/grades", icon: PenLine, label: "Marks", roles: ["super_admin", "admin", "teacher"] as AppRole[] },
+  { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics", roles: ["super_admin", "admin", "teacher"] as AppRole[] },
   { to: "/dashboard/messages", icon: Megaphone, label: "Messages", roles: ["super_admin", "admin", "teacher", "viewer"] as AppRole[] },
   { to: "/dashboard/team", icon: Shield, label: "Team", roles: ["super_admin", "admin"] as AppRole[] },
 ];
